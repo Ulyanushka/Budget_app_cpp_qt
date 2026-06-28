@@ -13,3 +13,12 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+int MainWindow::add(int a, int b) const
+{
+    return a + b;
+}
+
+QString MainWindow::greeting(const QString &name) const
+{
+    return QString("Hello, %1!").arg(name);
+}

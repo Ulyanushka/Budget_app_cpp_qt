@@ -15,7 +15,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    int add(int a, int b) const;
+    QString greeting(const QString &name) const;
+
 private:
     Ui::MainWindow *ui;
 };
+
 #endif // MAINWINDOW_H
