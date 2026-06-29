@@ -7,10 +7,16 @@ CONFIG += c++17
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000
 
 SOURCES += \
+    db/reading.cpp \
+    db/structs.cpp \
+    db/writing.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    db/reading.h \
+    db/structs.h \
+    db/writing.h \
     mainwindow.h
 
 FORMS += \
