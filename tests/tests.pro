@@ -5,12 +5,14 @@ CONFIG += c++17 testcase
 TEMPLATE = app
 
 SOURCES += \
-    tests_mainwindow.cpp \
-    ../mainwindow.cpp
+    *.cpp \
+    ../mainwindow.cpp \
+    ../db/*.cpp
 
 HEADERS += \
-    tests_mainwindow.h \
-    ../mainwindow.h
+    *.h \
+    ../mainwindow.h \
+    ../db/*.h
 
 FORMS += $$PWD/../mainwindow.ui
 

@@ -1,69 +1,61 @@
 #include "rw.h"
 
 #include <QJsonDocument>
-#include <QJsonObject>
+//#include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
 #include <QDir>
+#include <QFileInfo>
 #include <QDate>
 
 #include "structs.h"
 
 
-bool WriteBudgetDataToJson(const BudgetData& data, const QString& dir_path) {
-    if (data.name.trimmed().isEmpty()) {
-        qWarning("Name isempty, can't write the file!");
-        return false;
+void WritePeriodToJson(QJsonObject& json, const Period& period) {
+    QJsonObject obj;
+    obj["start"] = period.start.toString(Qt::ISODate);
+    obj["end"]   = period.end.toString(Qt::ISODate);
+    json["period"] = obj;
+}
+
+void WriteIncomesToJson(QJsonObject& json, const QVector<Income>& incomes) {
+    QJsonArray income_arr;
+    for (const Income& inc : incomes) {
+        QJsonObject obj;
+        obj["source"] = inc.source;
+        obj["amount"] = inc.amount;
+        income_arr.append(obj);
     }
-    QDir dir(dir_path);
-    QString file_name = data.name + ".json";
-    QString file_path = dir.filePath(file_name);
+    json["incomes"] = income_arr;
+}
 
-    QJsonObject root;
-    root["name"] = data.name;
+void WriteExpensesToJson(QJsonObject& json, const QVector<Expense>& expenses) {
+    QJsonArray expense_arr;
+    for (const Expense& exp : expenses) {
+        QJsonObject obj;
+        obj["article"] = exp.article;
 
-    QJsonObject period_obj;
-    period_obj["start"] = data.period.start.toString(Qt::ISODate);
-    period_obj["end"]   = data.period.end.toString(Qt::ISODate);
-    root["period"] = period_obj;
-
-    QJsonArray incomes_ar;
-    for (const Income& inc : data.incomes) {
-        QJsonObject inc_obj;
-        inc_obj["source"] = inc.source;
-        inc_obj["amount"] = inc.amount;
-        incomes_ar.append(inc_obj);
-    }
-    root["incomes"] = incomes_ar;
-
-    QJsonArray expenses_ar;
-    for (const Expense& exp : data.expenses) {
-        QJsonObject exp_obj;
-        exp_obj["article"] = exp.article;
-
-        QJsonArray amounts_ar;
+        QJsonArray amount_arr;
         for (int val : exp.amounts) {
-            amounts_ar.append(val);
+            amount_arr.append(val);
         }
-        exp_obj["amounts"] = amounts_ar;
+        obj["amounts"] = amount_arr;
 
         if (!exp.comments.isEmpty()) {
             bool valid = (exp.comments.size() == exp.amounts.size());
             if (valid) {
-                for (const QString& c : exp.comments) {
-                    if (c.trimmed().isEmpty()) {
+                for (const QString& comment : exp.comments) {
+                    if (comment.trimmed().isEmpty()) {
                         valid = false;
                         break;
                     }
                 }
             }
-
             if (valid) {
-                QJsonArray comments_ar;
-                for (const QString &c : exp.comments) {
-                    comments_ar.append(c);
-                }
-                exp_obj["comments"] = comments_ar;
+                QJsonArray comment_arr;
+                for (const QString& comment : exp.comments)
+                    comment_arr.append(comment);
+                obj["comments"] = comment_arr;
             } else {
                 qWarning() << "Article " << exp.article
                            << ": can't write the comments "
@@ -71,14 +63,107 @@ bool WriteBudgetDataToJson(const BudgetData& data, const QString& dir_path) {
             }
         }
 
-        expenses_ar.append(exp_obj);
+        expense_arr.append(obj);
     }
-    root["expenses"] = expenses_ar;
+    json["expenses"] = expense_arr;
+}
+
+
+bool ReadPeriodFromJson(const QJsonObject& json, Period& period) {
+    if (!json.contains("period") || !json["period"].isObject()) {
+        return false;
+    }
+
+    QJsonObject obj = json["period"].toObject();
+    period.start = QDate::fromString(obj["start"].toString(), Qt::ISODate);
+    period.end   = QDate::fromString(obj["end"].toString(), Qt::ISODate);
+    return true;
+}
+
+bool ReadIncomesFromJson(const QJsonObject& json, QVector<Income>& incomes) {
+    incomes.clear();
+    if (json.contains("incomes")) {
+        if (!json["incomes"].isArray())
+            return false;
+
+        QJsonArray income_arr = json["incomes"].toArray();
+        for (const QJsonValue& val : income_arr) {
+            QJsonObject obj = val.toObject();
+            Income inc;
+            inc.source = obj["source"].toString();
+            inc.amount = obj["amount"].toInt();
+            incomes.append(inc);
+        }
+    }
+    return true;
+}
+
+bool ReadExpensesFromJson(const QJsonObject& json, QVector<Expense>& expenses) {
+    expenses.clear();
+    if (json.contains("expenses")) {
+        if (!json["expenses"].isArray()) {
+            return false;
+        }
+
+        QJsonArray expense_arr = json["expenses"].toArray();
+        for (const QJsonValue& val : expense_arr) {
+            QJsonObject obj = val.toObject();
+            Expense exp;
+            exp.article = obj["article"].toString();
+
+            QJsonArray amount_arr = obj["amounts"].toArray();
+            for (const QJsonValue& av : amount_arr) {
+                exp.amounts.append(av.toInt());
+            }
+
+            if (obj.contains("comments") && obj["comments"].isArray()) {
+                QJsonArray comment_arr = obj["comments"].toArray();
+                QVector<QString> loaded;
+                bool ok = true;
+                for (const QJsonValue& cv : comment_arr) {
+                    QString str = cv.toString();
+                    if (str.trimmed().isEmpty()) {
+                        ok = false;
+                        break;
+                    }
+                    loaded.append(str);
+                }
+                if (ok && loaded.size() == exp.amounts.size()) {
+                    exp.comments = loaded;
+                } else {
+                    qWarning() << "Article " << exp.article
+                               << ": can't read the comments "
+                                  "(wrong length or empty elements)!";
+                }
+            }
+
+            expenses.append(exp);
+        }
+    }
+    return true;
+}
+
+
+bool WriteBudgetDataToJson(const BudgetData& data, const QString& dir_path) {
+    if (data.name.trimmed().isEmpty()) {
+        qWarning("Name is empty, can't write the file!");
+        return false;
+    }
+
+    QDir dir(dir_path);
+    QString file_path = dir.filePath(data.name + ".json");
+
+    QJsonObject root;
+    root["name"] = data.name;
+
+    WritePeriodToJson(root, data.period);
+    WriteIncomesToJson(root, data.incomes);
+    WriteExpensesToJson(root, data.expenses);
 
     QJsonDocument doc(root);
     QFile file(file_path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qWarning("Can'topen the file for writing: %s!", qPrintable(file_path));
+        qWarning("Can't open the file for writing: %s!", qPrintable(file_path));
         return false;
     }
     file.write(doc.toJson(QJsonDocument::Indented));
@@ -89,7 +174,7 @@ bool WriteBudgetDataToJson(const BudgetData& data, const QString& dir_path) {
 bool ReadBudgetDataFromJson(BudgetData& data, const QString& file_path) {
     QFile file(file_path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning("Can'topen the file for reading: %s!", qPrintable(file_path));
+        qWarning("Can't open the file for reading: %s!", qPrintable(file_path));
         return false;
     }
 
@@ -99,90 +184,36 @@ bool ReadBudgetDataFromJson(BudgetData& data, const QString& file_path) {
     QJsonParseError parse_error;
     QJsonDocument doc = QJsonDocument::fromJson(raw_data, &parse_error);
     if (parse_error.error != QJsonParseError::NoError) {
-        qWarning("JSONparsing error: %s!",
-                 qPrintable(parse_error.errorString()));
+        qWarning("JSON parsing error: %s!", qPrintable(parse_error.errorString()));
         return false;
     }
-
     if (!doc.isObject()) {
         qWarning("Root is not an object!");
         return false;
     }
 
     QJsonObject root = doc.object();
-    data.name = root["name"].toString();
 
-    QFileInfo fi(file_path);
-    QString expected_name = fi.completeBaseName();
-    if (data.name != expected_name) {
-        qWarning() << "Name in the file ("
-                   << data.name
+    data.name = root["name"].toString();
+    QFileInfo file_info(file_path);
+    if (data.name != file_info.completeBaseName()) {
+        qWarning() << "Name in the file (" << data.name
                    << ") is not same as the file's name ("
-                   << expected_name << ")";
+                   << file_info.completeBaseName() << ")";
         return false;
     }
 
-    if (!root.contains("period") || !root["period"].isObject()) {
+    if (!ReadPeriodFromJson(root, data.period)) {
         qWarning("Problems with key 'period'");
         return false;
     }
-    QJsonObject period_obj = root["period"].toObject();
-    data.period.start = QDate::fromString(
-        period_obj["start"].toString(), Qt::ISODate);
-    data.period.end   = QDate::fromString(
-        period_obj["end"].toString(), Qt::ISODate);
 
-    data.incomes.clear();
-    if (root.contains("incomes") && root["incomes"].isArray()) {
-        QJsonArray incomes_ar = root["incomes"].toArray();
-        for (const QJsonValue& val : incomes_ar) {
-            QJsonObject obj = val.toObject();
-            Income inc;
-            inc.source = obj["source"].toString();
-            inc.amount = obj["amount"].toInt();
-            data.incomes.append(inc);
-        }
+    if (!ReadIncomesFromJson(root, data.incomes)) {
+        return false;
     }
 
-    data.expenses.clear();
-    if (root.contains("expenses") && root["expenses"].isArray()) {
-        QJsonArray expenses_ar = root["expenses"].toArray();
-        for (const QJsonValue& val : expenses_ar) {
-            QJsonObject obj = val.toObject();
-            Expense exp;
-            exp.article = obj["article"].toString();
-
-            QJsonArray amounts_ar = obj["amounts"].toArray();
-            for (const QJsonValue& v : amounts_ar) {
-                exp.amounts.append(v.toInt());
-            }
-
-            if (obj.contains("comments") && obj["comments"].isArray()) {
-                QJsonArray comments_ar = obj["comments"].toArray();
-                QVector<QString> loaded_comments;
-                bool all_non_empty = true;
-                for (const QJsonValue& v : comments_ar) {
-                    QString str = v.toString();
-                    if (str.trimmed().isEmpty()) {
-                        all_non_empty = false;
-                        break;
-                    }
-                    loaded_comments.append(str);
-                }
-
-                if (all_non_empty
-                    && loaded_comments.size() == exp.amounts.size())
-                {
-                    exp.comments = loaded_comments;
-                } else {
-                    qWarning() << "Article " << exp.article
-                               << ": can't read the comments "
-                                  "(wrong length or empty elements)!";
-                }
-            }
-
-            data.expenses.append(exp);
-        }
+    if (!ReadExpensesFromJson(root, data.expenses)) {
+        return false;
     }
 
     return true;

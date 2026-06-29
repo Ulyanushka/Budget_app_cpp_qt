@@ -1,12 +1,12 @@
 #ifndef DB_STRUCTS_H
 #define DB_STRUCTS_H
 
-#include <QString>
+//#include <QString>
 #include <QDate>
 #include <QVector>
 
 
-struct BudgetPeriod {
+struct Period {
     QDate start;
     QDate end;
 };
@@ -24,7 +24,7 @@ struct Expense {
 
 struct BudgetData {
     QString name;
-    BudgetPeriod period;
+    Period period;
     QVector<Income> incomes;
     QVector<Expense> expenses;
 };
