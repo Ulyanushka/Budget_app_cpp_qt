@@ -5,6 +5,7 @@
 #include <QDate>
 #include <QVector>
 
+
 struct BudgetPeriod {
     QDate start;
     QDate end;
@@ -18,11 +19,11 @@ struct Income {
 struct Expense {
     QString article;
     QVector<int> amounts;
-    QVector<QString> comments;   // либо пуст, либо все строки непустые
+    QVector<QString> comments;
 };
 
 struct BudgetData {
-    QString name;                // название (определяет имя файла)
+    QString name;
     BudgetPeriod period;
     QVector<Income> incomes;
     QVector<Expense> expenses;
