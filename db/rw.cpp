@@ -1,14 +1,11 @@
 #include "rw.h"
 
 #include <QJsonDocument>
-//#include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
 #include <QDir>
 #include <QFileInfo>
 #include <QDate>
-
-#include "structs.h"
 
 
 void WritePeriodToJson(QJsonObject& json, const Period& period) {

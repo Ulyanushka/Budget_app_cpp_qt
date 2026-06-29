@@ -1,11 +1,9 @@
 #ifndef DB_RW_H
 #define DB_RW_H
 
-#include <QVector>
 #include <QJsonObject>
 
 #include "structs.h"
-
 
 
 void WritePeriodToJson(QJsonObject& json, const Period& period);

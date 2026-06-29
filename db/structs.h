@@ -1,7 +1,6 @@
 #ifndef DB_STRUCTS_H
 #define DB_STRUCTS_H
 
-//#include <QString>
 #include <QDate>
 #include <QVector>
 
