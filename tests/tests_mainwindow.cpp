@@ -1,5 +1,9 @@
 #include "tests_mainwindow.h"
 
+#include <QtTest>
+#include "../mainwindow.h"
+
+
 void TestMainWindow::addPositiveNumbers()
 {
     MainWindow w;
@@ -29,5 +33,3 @@ void TestMainWindow::greetingEmptyName()
     MainWindow w;
     QCOMPARE(w.greeting(""), QString("Hello, !"));
 }
-
-QTEST_MAIN(TestMainWindow)

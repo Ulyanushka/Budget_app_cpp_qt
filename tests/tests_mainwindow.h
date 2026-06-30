@@ -1,8 +1,8 @@
 #ifndef TESTS_MAINWINDOW_H
 #define TESTS_MAINWINDOW_H
 
-#include <QtTest>
-#include "../mainwindow.h"
+#include <QObject>
+
 
 class TestMainWindow : public QObject
 {
@@ -16,4 +16,4 @@ private slots:
     void greetingEmptyName();
 };
 
-#endif
+#endif // TESTS_MAINWINDOW_H

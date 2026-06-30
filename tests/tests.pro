@@ -7,12 +7,12 @@ TEMPLATE = app
 SOURCES += \
     *.cpp \
     ../mainwindow.cpp \
-    ../db/*.cpp
+    ../db/*.cpp \
 
 HEADERS += \
     *.h \
     ../mainwindow.h \
-    ../db/*.h
+    ../db/*.h \
 
 FORMS += $$PWD/../mainwindow.ui
 
