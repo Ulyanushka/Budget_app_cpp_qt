@@ -7,14 +7,15 @@ CONFIG += c++17
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000
 
 SOURCES += \
-    main.cpp \
-    mainwindow.cpp
+    $$PWD/*.cpp \
+    $$PWD/db/*.cpp
 
 HEADERS += \
-    mainwindow.h
+    $$PWD/*.h \
+    $$PWD/db/*.h
 
 FORMS += \
-    mainwindow.ui
+    $$PWD/mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
